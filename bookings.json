@@ -1,0 +1,33 @@
+[
+    {
+        "user_id": "USER-001",
+        "name": "Abdul Kadher P",
+        "bus_id": "BUS-003",
+        "destination": "Tenkasi",
+        "num_seats": 1,
+        "seat_numbers": [
+            23
+        ]
+    },
+    {
+        "user_id": "USER-002",
+        "name": "SomeOne",
+        "bus_id": "BUS-001",
+        "destination": "Chennai",
+        "num_seats": 1,
+        "seat_numbers": [
+            28
+        ]
+    },
+    {
+        "user_id": "USER-004",
+        "name": "Abdul Kadher P",
+        "bus_id": "BUS-004",
+        "destination": "Coimbatore",
+        "num_seats": 2,
+        "seat_numbers": [
+            11,
+            12
+        ]
+    }
+]
