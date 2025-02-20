@@ -1,53 +1,92 @@
-from models.user import User
 from models.bus import Bus
-from models.bus_manager import BusManager
+from system.bus_manager import BusManager
 from models.booking_system import BookingSystem
+from system.user_admin_manager import UserAdminManager
+from utils.jsonstorage import JSONStorage
+from abc import ABC, abstractmethod
 
-class BookingManager:
+class BookingManagerBlueprint(ABC):
+    
+    @classmethod
+    @abstractmethod
+    def change_num_seats(cls, total_seats: int) -> None:
+        pass
+    
+    @classmethod
+    @abstractmethod
+    def change_seat_amount(cls,amount: int) -> None:
+        pass
+    
+    @abstractmethod
+    def book_ticket(self) -> None:
+        pass
+    
+    @abstractmethod
+    def cancel_ticket(self) -> None:
+        pass
+    
+class BookingManager(BookingManagerBlueprint):
+    
+    BOOKING_FILE = 'data/booking_info.json'
+    file = JSONStorage.read_json_file(BOOKING_FILE)
+    total_seat = file['Total Seats']
+    amount = file['Amount']
+    
+    @staticmethod
+    def change_num_seats(total_seats: int) -> None:
+        data = JSONStorage.read_json_file(BookingManager.BOOKING_FILE)
+        data['Total Seats'] = total_seats
+        JSONStorage.save_json(BookingManager.BOOKING_FILE,data)
+        
+    @staticmethod
+    def change_seat_amount(amount: int) -> None:
+        data = JSONStorage.read_json_file(BookingManager.BOOKING_FILE)
+        data['Amount'] = amount
+        JSONStorage.save_json(BookingManager.BOOKING_FILE,data)
+        
     def __init__(self):
         self.booking_system = BookingSystem()
 
-    def get_user_details(self):
-        """Collect and return user details"""
-        name = input("Enter Your Name: ")
-        phone = int(input("Enter Your Phone Number: "))
-        email = input("Enter Your Email Address: ")
-        user = User(email = email, phone_no = phone, name = name)
-        print(user.user_welcome())
-        return user
-    
-    def display_available_buses(self) -> dict[str]:
-        """Display available buses"""
-        bus_manager = BusManager()
-        available_buses = bus_manager.show_available_buses()
-        print("Available Buses:")
-        for city, bus_id in available_buses.items():
-            print(f"Bus ID: {bus_id} - Destination: {city}")
-        return available_buses
-
     def book_ticket(self):
         """Handle the booking process"""
-        user = self.get_user_details()
-        available_buses = self.display_available_buses()
-        bus_id = input("Enter the Bus ID to book: ")
-        selected_bus = next(({'destination': city,'bus_id': bus} for city, bus in available_buses.items() if bus == bus_id), None)
+        user = UserAdminManager.get_user_details('User')
+        print(f"Hi!! {user.name}, Happy for choosing our website for Booking....\nHave a nice Journy!")
+        available_buses = BusManager.display_available_buses()
+        while True:
+            bus_id = input("Enter the Bus ID to book: ")
+            if bus_id not in available_buses.values():
+                print("Enter the Valid BUS Id!")
+                continue
+            break
+        selected_bus = next(({'Destination': city,'Bus Id': bus} for city, bus in available_buses.items() if bus == bus_id), None)
 
         if selected_bus:
-            print(f"Booking seat on bus {bus_id} to {selected_bus['destination']}...")
-            bus = Bus(bus_id=bus_id, total_seats=48)  
+            print(f"Booking seat on bus {bus_id} to {selected_bus['Destination']}...")
+            bus = Bus(bus_id= bus_id, total_seats= BookingManager.total_seat)  
             seats = bus.get_seating_arrangement()
-            num_seats = int(input(f"Enter Number of Seats {user.name} want to Book!"))
+            while True:
+                for seat in seats:
+                    print(seat)
+                print(f"Currently {len(bus.available_seats)} Number of seats available for this bus {bus.bus_id} to the {bus.destination}")
+                num_seats = int(input(f"Enter Number of Seats {user.name} want to Book!"))
+                if num_seats < 1 or num_seats > bus.available_number_seats:
+                    print("Enter the valid number of seats")
+                    continue
+                break
             number_seats = []
             for _ in range(num_seats):
                 for seat in seats:
                     print(seat)
-                seat_number = int(input("Enter the seat number to book: "))
-                number_seats.append(seat_number)
-                
-            if self.booking_system.book_seat(bus, selected_bus['destination'], user,num_seats,number_seats):
-                print(f"Seat {number_seats} successfully booked for {user.name} on Bus {bus_id} to {selected_bus['destination']}.")
-            else:
-                print(f"Seat {seat_number} is already booked. Please choose another seat.")
+                while True:    
+                    seat_number = int(input("Enter the seat number to book: "))
+                    if seat_number not in bus.available_seats:
+                        print("Seat is already booked. Please choose another seat.")
+                        continue
+                    number_seats.append(seat_number)
+                    break
+            amount_per_seats = BookingManager.amount * num_seats    
+            if self.booking_system.book_seat(bus, selected_bus['Destination'], user,num_seats,number_seats, amount_per_seats):
+                print(f"Seat {', '.join(map(str, number_seats))} successfully booked for {user.name} on Bus {bus_id} to {selected_bus['Destination']}.")
         else:
             print("Invalid Bus ID! Please try again.")
 
@@ -59,7 +98,7 @@ class BookingManager:
 
         user_bookings = []
         for booking in bookings:
-            if booking['user_id'] == user_id:
+            if booking['User Id'] == user_id:
                 user_bookings.append(booking)
 
         if not user_bookings:
@@ -68,30 +107,24 @@ class BookingManager:
 
         print("Your bookings:")
         for i, booking in enumerate(user_bookings, start=1):
-            # Correcting this line to display only seat numbers correctly
-            print(f"{i}. Bus ID: {booking['bus_id']} - Destination: {booking['destination']}, Seats: {booking['seat_numbers']}, Number of Seats: {booking['num_seats']}")
+            print(f"{i}. Bus ID: {booking['Bus Id']} - Destination: {booking['Destination']}, Seats: {", ".join(map(str, booking['Seat Numbers']))}, Number of Seats: {booking['Number of Seats']}")
 
-        # Allow user to choose the bus_id to cancel from
         bus_id_choice = input("Enter the Bus ID to cancel seats from (or 'cancel' to go back): ").strip()
 
         if bus_id_choice.lower() == 'cancel':
             print("Cancellation process aborted.")
             return
 
-        # Filter bookings by the chosen bus_id
-        selected_bookings = [booking for booking in user_bookings if booking['bus_id'] == bus_id_choice]
+        selected_bookings = [booking for booking in user_bookings if booking['Bus Id'] == bus_id_choice]
 
         if not selected_bookings:
             print(f"No bookings found for Bus ID {bus_id_choice}.")
             return
-
-        # Display available bookings for the chosen bus_id
         booked_seats = []
         print(f"Bookings found for Bus ID {bus_id_choice}:")
         for i, booking in enumerate(selected_bookings, start=1):
-            # Correctly display seat numbers without showing the entire dictionary
-            print(f"{i}. Seats: {', '.join(map(str, booking['seat_numbers']))} - Number of Seats: {booking['num_seats']}")
-            booked_seats = booking['seat_numbers']
+            print(f"{i}. Seats: {', '.join(map(str, booking['Seat Numbers']))} - Number of Seats: {booking['Number of Seats']}")
+            booked_seats = booking['Seat Numbers']
          
         booking_choice = int(input("Enter the Number of Booking needs to cancel: "))
         if booking_choice < 1 or booking_choice > len(booked_seats):
@@ -108,9 +141,8 @@ class BookingManager:
                 print(f"Seat {seat} is not booked in your selected bus. Cancellation failed.")
                 return
 
-        # Create a bus object with the bus_id
-        bus = Bus(bus_id=bus_id_choice, total_seats=48)  
+        bus = Bus(bus_id=bus_id_choice, total_seats=BookingManager.total_seat)  
         if self.booking_system.cancel_seat(bus, selected_booking):
-            print(f"Seat {selected_booking} successfully cancelled for user {user_id} on Bus {bus_id_choice}.")
+            print(f"Seat {', '.join(map(str, selected_booking))} successfully cancelled for user {user_id} on Bus {bus_id_choice}.")
         else:
             print("Error in canceling the seat.")

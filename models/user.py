@@ -1,8 +1,52 @@
-import json
-import os
-class User:
+from utils.jsonstorage import JSONStorage
+from models.save_user_admin import SaveUserAdmin
+from abc import ABC,abstractmethod
+
+class UserBlueprint(ABC):
+    
+    @property
+    @abstractmethod
+    def user_id(self) -> str:
+        pass
+
+    @user_id.setter
+    @abstractmethod
+    def user_id(self, value: str) -> None:
+        pass
+
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        pass
+
+    @name.setter
+    @abstractmethod
+    def name(self, value: str) -> None:
+        pass
+
+    @property
+    @abstractmethod
+    def phone_no(self) -> int:
+        pass
+
+    @phone_no.setter
+    @abstractmethod
+    def phone_no(self, value: int) -> None:
+        pass
+
+    @property
+    @abstractmethod
+    def email(self) -> str:
+        pass
+
+    @email.setter
+    @abstractmethod
+    def email(self, value: str) -> None:
+        pass
+    
+class User(UserBlueprint):
     """User informations"""
-    USERS_FILE = "users_data.json"
+    USERS_FILE = "data/users_data.json"
     user_counter = 1
     
     def __init__(self, name: str = None, phone_no: int = None, email: str = None) -> None:
@@ -10,49 +54,20 @@ class User:
         self._name = name if name else 'SomeOne'
         self._phone_no = phone_no if phone_no else 0
         self._email = email if email else 'something@gmail.com'
-        self.save_user_data()
+        SaveUserAdmin.save_user_admin_data(self,'UserType')
         User.user_counter += 1
 
     def generate_user_id(self):
-        try:
-            with open('users_data.json', 'r') as file:
-                users = json.load(file)
-        except (FileNotFoundError, json.JSONDecodeError):
+        if (users := JSONStorage.read_json_file(User.USERS_FILE)) is None:
             users = []
-            
         if not users:
             return 'USER-001'
         else:
             last_user = users[-1]
-            last_id = last_user["user_id"]
+            last_id = last_user["User Id"]
             new_id_number = int(last_id.split('-')[1]) + 1
             new_user_id = f"USER-{new_id_number:03d}"
-            return new_user_id
-        
-    @staticmethod
-    def load_users_data():
-        """Load users from the JSON file."""
-        if os.path.exists(User.USERS_FILE):
-            with open(User.USERS_FILE, 'r') as f:
-                return json.load(f)
-        return []
-
-    def save_user_data(self):
-        """Save the current user to the JSON file."""
-        users = self.load_users_data()
-        new_user = {
-            'user_id': self._user_id,
-            'name': self._name,
-            'phone_no': self._phone_no,
-            'email': self._email
-        }
-        users.append(new_user)
-        
-        with open(User.USERS_FILE, 'w') as f:
-            json.dump(users, f, indent=4)
-    
-    def user_welcome(self):
-        return f"Hi! {self._name} its a pleasure to see you using our website!"
+            return new_user_id    
     
     @property
     def user_id(self) -> str:

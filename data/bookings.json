@@ -1,0 +1,14 @@
+[
+    {
+        "User Id": "USER-003",
+        "Name": "Abdul Kadher P",
+        "Bus Id": "BUS-001",
+        "Destination": "Chennai",
+        "Number of Seats": 2,
+        "Seat Numbers": [
+            1,
+            2
+        ],
+        "Amount": 1200
+    }
+]

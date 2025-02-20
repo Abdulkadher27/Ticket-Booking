@@ -1,0 +1,20 @@
+[
+    {
+        "User Id": "USER-001",
+        "Name": "Abdul Kadher P",
+        "Phone Number": 8344357819,
+        "Email": "abdulkadher@gmail.com"
+    },
+    {
+        "User Id": "USER-002",
+        "Name": "Abdul Kadher P",
+        "Phone Number": 1234567890,
+        "Email": "abdulkadher@gmail.com"
+    },
+    {
+        "User Id": "USER-003",
+        "Name": "Abdul Kadher P",
+        "Phone Number": 9087654321,
+        "Email": "abdulkadher@gmail.com"
+    }
+]
